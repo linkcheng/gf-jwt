@@ -226,9 +226,13 @@ func New(mw *GfJWTMiddleware) *GfJWTMiddleware {
 		mw.CookieName = "jwt"
 	}
 
+	if mw.CacheAdapter != nil {
+		blacklist.SetAdapter(mw.CacheAdapter)
+	}
+
 	// bypass other key settings if KeyFunc is set
 	if mw.KeyFunc != nil {
-		return nil
+		return mw
 	}
 
 	if mw.usingPublicKeyAlgo() {
@@ -239,10 +243,6 @@ func New(mw *GfJWTMiddleware) *GfJWTMiddleware {
 
 	if mw.Key == nil {
 		panic(ErrMissingSecretKey)
-	}
-
-	if mw.CacheAdapter != nil {
-		blacklist.SetAdapter(mw.CacheAdapter)
 	}
 
 	return mw
