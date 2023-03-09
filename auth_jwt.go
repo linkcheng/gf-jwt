@@ -37,7 +37,7 @@ type GfJWTMiddleware struct {
 
 	// Callback to retrieve key used for signing. Setting KeyFunc will bypass
 	// all other key settings
-	KeyFunc func(token *jwt.Token) (interface{}, error)
+	KeyFunc func(token string, ctx context.Context) func(token *jwt.Token) (interface{}, error)
 
 	// Duration that a jwt token is valid. Optional, defaults to one hour.
 	Timeout time.Duration
@@ -669,7 +669,7 @@ func (mw *GfJWTMiddleware) parseToken(r *ghttp.Request) (*jwt.Token, error) {
 	}
 
 	if mw.KeyFunc != nil {
-		return jwt.Parse(token, mw.KeyFunc)
+		return jwt.Parse(token, mw.KeyFunc(token, r.GetCtx()))
 	}
 
 	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
@@ -682,23 +682,6 @@ func (mw *GfJWTMiddleware) parseToken(r *ghttp.Request) (*jwt.Token, error) {
 
 		// save token string if valid
 		r.SetParam(TokenKey, token)
-
-		return mw.Key, nil
-	})
-}
-
-func (mw *GfJWTMiddleware) parseTokenString(token string) (*jwt.Token, error) {
-	if mw.KeyFunc != nil {
-		return jwt.Parse(token, mw.KeyFunc)
-	}
-
-	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		if jwt.GetSigningMethod(mw.SigningAlgorithm) != t.Method {
-			return nil, ErrInvalidSigningAlgorithm
-		}
-		if mw.usingPublicKeyAlgo() {
-			return mw.pubKey, nil
-		}
 
 		return mw.Key, nil
 	})
